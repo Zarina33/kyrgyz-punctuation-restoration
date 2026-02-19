@@ -77,7 +77,7 @@ The first punctuation restoration system for Kyrgyz, a low-resource agglutinativ
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 import torch
 
-model_name = "YOUR_HF_USER/xlmr-kyrgyz-punctuation"  # or mbert-kyrgyz-punctuation
+model_name = "Zarinaaa/xlmr-kyrgyz-punctuation"  # or Zarinaaa/mbert-kyrgyz-punctuation
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForTokenClassification.from_pretrained(model_name)
 
@@ -134,8 +134,10 @@ for i, (wid, pred) in enumerate(zip(word_ids, preds)):
 
 | Model | Parameters | F1 | Link |
 |-------|-----------|-----|------|
-| mBERT (bert-base-multilingual-cased) | 177M | 0.938 | [HuggingFace](https://huggingface.co/YOUR_HF_USER/mbert-kyrgyz-punctuation) |
-| XLM-RoBERTa-base | 270M | 0.949 | [HuggingFace](https://huggingface.co/YOUR_HF_USER/xlmr-kyrgyz-punctuation) |
+| mBERT (bert-base-multilingual-cased) | 177M | 0.938 | [HuggingFace](https://huggingface.co/Zarinaaa/mbert-kyrgyz-punctuation) |
+| XLM-RoBERTa-base | 270M | 0.949 | [HuggingFace](https://huggingface.co/Zarinaaa/xlmr-kyrgyz-punctuation) |
+
+**Dataset:** [Zarinaaa/kyrgyz-punctuation-dataset](https://huggingface.co/datasets/Zarinaaa/kyrgyz-punctuation-dataset)
 
 ---
 

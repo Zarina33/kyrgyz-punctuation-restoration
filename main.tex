@@ -1,0 +1,386 @@
+\documentclass[manuscript, review, anonymous]{acmart}
+
+%% Bibliography style
+\bibliographystyle{ACM-Reference-Format}
+
+%% For TALLIP Notes
+\acmJournal{TALLIP}
+
+%% Remove default ACM copyright for submission draft
+\setcopyright{none}
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+\begin{document}
+
+%% Title
+\title{Punctuation Restoration for Kyrgyz Language: A Comparative Study of Multilingual Transformer Models}
+
+%% Authors (hidden during review due to anonymous option)
+\author{Anonymous Author(s)}
+\affiliation{%
+  \institution{Anonymous Institution}
+  \country{}}
+\email{anonymous@example.com}
+
+%% ============================================================
+%% ABSTRACT
+%% ============================================================
+\begin{abstract}
+We present the first punctuation restoration system for Kyrgyz, a low-resource agglutinative language of the Turkic family with approximately 7~million speakers. Punctuation restoration is a critical post-processing step for automatic speech recognition (ASR) systems, yet no prior work has addressed this task for Kyrgyz. We construct a labeled dataset of 14,028 sentences (141,626 tokens) from diverse Kyrgyz-language sources---literary texts, Wikipedia, and news articles---and compare two multilingual transformer models, mBERT and XLM-RoBERTa-base, fine-tuned for token-level classification of four labels: \texttt{O} (no punctuation), \texttt{PERIOD}, \texttt{COMMA}, and \texttt{QUESTION}. XLM-RoBERTa achieves the best overall weighted F1-score of 94.9\%, outperforming mBERT (93.8\%) and a rule-based baseline (79.0\%). Per-class analysis reveals that comma prediction is the most challenging class (F1: 77.5\%), largely due to Kyrgyz converb constructions that create syntactic ambiguity at clause boundaries. We make our dataset and models publicly available to support further research on Turkic language processing.\footnote{Dataset and models will be released at: \texttt{[URL removed for anonymous review]}}
+\end{abstract}
+
+%% ACM CCS Concepts
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10010405.10010469.10010475</concept_id>
+       <concept_desc>Applied computing~Document analysis</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10010147.10010178.10010179</concept_id>
+       <concept_desc>Computing methodologies~Natural language processing</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Applied computing~Document analysis}
+\ccsdesc[500]{Computing methodologies~Natural language processing}
+
+\keywords{punctuation restoration, Kyrgyz language, XLM-RoBERTa, mBERT, low-resource NLP, token classification, Turkic languages}
+
+\maketitle
+
+%% ============================================================
+%% 1. INTRODUCTION
+%% ============================================================
+\section{Introduction}
+
+Punctuation restoration---the task of inserting appropriate punctuation marks into unpunctuated text---is an essential post-processing step for automatic speech recognition (ASR) systems. ASR output typically lacks punctuation, which degrades readability for human consumers and reduces the effectiveness of downstream NLP tasks such as machine translation, summarization, and named entity recognition~\cite{nguyen2019fast, yi2019self}.
+
+Early approaches to punctuation restoration relied on hand-crafted rules and n-gram language models. The introduction of recurrent neural networks (RNNs) and long short-term memory (LSTM) networks brought substantial improvements, enabling models to capture longer-range dependencies in text~\cite{li2020multilingual}. The transformer architecture~\cite{vaswani2017attention} and pre-trained language models such as BERT~\cite{devlin2019bert} and RoBERTa~\cite{liu2019roberta} further advanced the state of the art, with XLM-RoBERTa~\cite{conneau2020unsupervised} extending these capabilities to over 100~languages through cross-lingual pre-training on 2.5~TB of filtered CommonCrawl data.
+
+Despite these advances, punctuation restoration research has overwhelmingly focused on high-resource languages such as English, Chinese, and European languages~\cite{alam2020punctuation, guerreiro2021subtitles, nagy2021punctuation}. Low-resource languages remain largely unstudied. This is particularly problematic for languages like Kyrgyz, where ASR systems are beginning to emerge but lack the post-processing pipeline needed for practical deployment.
+
+Kyrgyz presents specific challenges for punctuation restoration. As an agglutinative Turkic language with SOV (Subject-Object-Verb) word order, Kyrgyz exhibits complex morphological patterns where a single word may carry multiple suffixes encoding grammatical relations. Converb suffixes (e.g., \textit{-p/-yp/-ip}) frequently mark clause boundaries where commas should appear, while the verb-final structure means sentence-ending punctuation depends on recognizing finite verb forms. These morphosyntactic properties are not shared by the high-resource languages on which most punctuation restoration systems are evaluated.
+
+In this paper, we make the following contributions:
+\begin{enumerate}
+    \item We present the \textbf{first punctuation restoration system} for the Kyrgyz language, demonstrating that multilingual transfer learning is effective for agglutinative low-resource languages.
+    \item We construct and release a \textbf{labeled Kyrgyz dataset} for punctuation restoration, comprising 141,626 tokens from literary texts, Wikipedia, and news sources.
+    \item We provide a \textbf{comparative evaluation} of two multilingual transformer models---mBERT and XLM-RoBERTa---against a rule-based baseline, with detailed per-class analysis.
+    \item We present a \textbf{linguistically informed error analysis} that connects model errors to specific morphosyntactic properties of Kyrgyz.
+\end{enumerate}
+
+%% ============================================================
+%% 2. KYRGYZ LANGUAGE BACKGROUND
+%% ============================================================
+\section{Kyrgyz Language Background}
+\label{sec:kyrgyz}
+
+Kyrgyz (ISO 639-3: \texttt{kir}) is a Turkic language of the Kipchak branch, spoken by approximately 7~million people, primarily in the Kyrgyz Republic. It is written in Cyrillic script with 36~letters, including three letters absent from the Russian Cyrillic alphabet: barred O (\textit{\"{O}}), straight U (\textit{\"{U}}), and eng (\textit{\NG}).\footnote{In Kyrgyz Cyrillic: Ө, Ү, Ң. We use approximate Latin equivalents here due to font constraints.} A recent survey of Kyrgyz NLP resources~\cite{alekseev2024kyrgyznlp} characterizes Kyrgyz as ``severely under-resourced,'' highlighting the scarcity of annotated datasets and language-specific models. Understanding the linguistic properties of Kyrgyz is essential for interpreting our model's behavior and error patterns.
+
+\subsection{Morphological Properties}
+
+Kyrgyz is a highly agglutinative language in which words are formed by concatenating multiple suffixes to a root. A single word can encode information that would require an entire phrase in English. For example:
+
+\begin{quote}
+\textit{okutuchularybyzdy\ng{}} = \textit{oku} (read) + \textit{-tuuchu} (agent) + \textit{-lar} (plural) + \textit{-ybyz} (1st person plural possessive) + \textit{-dy\ng{}} (genitive) = `of our teachers'
+\end{quote}
+
+This agglutinative structure has direct consequences for punctuation restoration. First, subword tokenization algorithms such as BPE (used by XLM-RoBERTa) fragment Kyrgyz words into multiple tokens, meaning the model must learn to associate punctuation decisions with token sequences rather than individual words. Second, certain morphological markers are strong indicators of punctuation placement: converb suffixes (\textit{-p, -yp, -ip}) typically signal comma positions, as they mark clause boundaries in complex sentences.
+
+\subsection{Syntactic Properties}
+
+Kyrgyz follows SOV (Subject-Object-Verb) word order, with the finite verb appearing at the end of the sentence. This means that period placement depends on recognizing sentence-final verb forms---a different signal from SVO languages like English, where sentence boundaries are marked by subject-initial patterns.
+
+Complex sentences in Kyrgyz are constructed using participial and converbal forms rather than relative pronouns. Subordinate clauses are typically formed by suffixing the verb, which creates long, multi-clause sentences where comma placement depends on morphological analysis rather than syntactic keywords.
+
+\subsection{Comparison with Related Languages}
+
+Table~\ref{tab:lang-comparison} compares Kyrgyz with Turkish, another Turkic language for which punctuation restoration has been studied~\cite{kurt2023turkish}. Despite their shared Turkic heritage, the languages differ in script, branch, and available NLP resources.
+
+\begin{table}[t]
+\caption{Comparison of Kyrgyz and Turkish.}
+\label{tab:lang-comparison}
+\begin{tabular}{lll}
+\toprule
+\textbf{Property} & \textbf{Kyrgyz} & \textbf{Turkish} \\
+\midrule
+Branch        & Kipchak      & Oghuz \\
+Script        & Cyrillic     & Latin \\
+Speakers      & $\sim$7M     & $\sim$80--90M \\
+Word order    & SOV          & SOV \\
+Morphology    & Agglutinative & Agglutinative \\
+PR research   & None (this work) & Kurt \& \c{C}ay{\i}r, 2023 \\
+NLP resources & Very limited & Moderate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% ============================================================
+%% 3. RELATED WORK
+%% ============================================================
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Transformer-based punctuation restoration.}
+Alam et al.~\cite{alam2020punctuation} fine-tuned XLM-RoBERTa for punctuation restoration on English and Bangla, achieving F1-scores of 87.0\% on clean English text and 69.5\% on Bangla. Their work demonstrated that multilingual pre-trained models can transfer to low-resource languages, though with a significant performance gap. Yi and Tao~\cite{yi2019self} combined self-attention with acoustic embeddings for English ASR transcripts. Guerreiro et al.~\cite{guerreiro2021subtitles} evaluated multiple transformer models across European languages, confirming that XLM-RoBERTa achieves strong cross-lingual performance even with minimal target-language data.
+
+\textbf{Multilingual and low-resource approaches.}
+Li and Lin~\cite{li2020multilingual} trained a multilingual LSTM model with BPE encoding across 43~languages, showing that shared multilingual representations benefit low-resource targets. Chordia~\cite{chordia2021punktuator} compared mBERT and XLM-RoBERTa across multiple languages including Hindi and Tamil, finding that XLM-RoBERTa consistently outperformed mBERT for morphologically complex languages. Pan et al.~\cite{pan2022punctuation} applied pre-trained models to multilingual ASR outputs, addressing domain mismatch between written training data and spoken language.
+
+\textbf{Turkic languages.}
+Kurt and \c{C}ay{\i}r~\cite{kurt2023turkish} developed transformer-based models for Turkish punctuation restoration, reporting macro F1-scores up to 83.9\%. More recently, G\"{o}rmez et al.~\cite{gormez2025turkish} constructed a novel Turkish dataset and trained CNN and transformer-encoder models, achieving an overall F-score of 90.1\%. Both studies confirm the challenges of comma prediction in agglutinative Turkic languages and provide reference points for our Kyrgyz experiments, as Kyrgyz shares agglutinative morphology and SOV word order with Turkish despite belonging to a different Turkic branch.
+
+\textbf{Streaming and real-time approaches.}
+Pol\'{a}\v{c}ek et al.~\cite{polacek2023streaming} proposed a lightweight ELECTRA-based online punctuation restoration module for streaming ASR, achieving F1 of 71.2\% on Czech radio transcripts with a latency of only three words. Their work highlights the practical constraints of real-time deployment, a direction relevant for future Kyrgyz ASR systems.
+
+\textbf{Data augmentation for low-resource NLP.}
+Wei and Zou~\cite{wei2019eda} proposed Easy Data Augmentation (EDA) techniques that improve text classification performance in low-resource settings. Fu et al.~\cite{fu2021improving} showed that external data selection using n-gram language models can improve punctuation restoration for speech transcripts by 1.12\% F1.
+
+%% ============================================================
+%% 4. METHODOLOGY
+%% ============================================================
+\section{Methodology}
+\label{sec:method}
+
+\subsection{Task Definition}
+
+We formulate punctuation restoration as a token-level classification problem. Given a sequence of input tokens $\mathbf{x} = (x_1, x_2, \ldots, x_n)$, the model predicts a label $y_i \in \{$\texttt{O}, \texttt{PERIOD}, \texttt{COMMA}, \texttt{QUESTION}$\}$ for each token $x_i$, where the label indicates the punctuation mark that should follow the token (or \texttt{O} for no punctuation):
+
+\begin{equation}
+\hat{y}_i = \arg\max \; \text{softmax}(\mathbf{W} \cdot \mathbf{h}_i + \mathbf{b})
+\end{equation}
+
+\noindent where $\mathbf{h}_i \in \mathbb{R}^{768}$ is the hidden representation of token $x_i$ from the final transformer layer, $\mathbf{W} \in \mathbb{R}^{4 \times 768}$ is a learnable weight matrix, and $\mathbf{b} \in \mathbb{R}^{4}$ is a bias vector.
+
+\subsection{Dataset}
+\label{sec:dataset}
+
+No punctuation restoration dataset existed for Kyrgyz prior to this work. We constructed a dataset from three sources:
+
+\begin{itemize}
+    \item \textbf{Literary texts} (67.5\%): Books in various genres (literature, science, history) downloaded from the Kyrgyz-Turkish Manas University library and converted from PDF to text.
+    \item \textbf{Wikipedia} (20.0\%): Articles from the Kyrgyz-language Wikipedia.
+    \item \textbf{News articles} (12.5\%): Texts from Kyrgyz-language news portals.
+\end{itemize}
+
+\begin{table}[t]
+\caption{Dataset statistics.}
+\label{tab:dataset}
+\begin{tabular}{lr}
+\toprule
+\textbf{Statistic} & \textbf{Value} \\
+\midrule
+Total tokens               & 141,626 \\
+Total sentences            & 14,028 \\
+Avg.\ sentence length      & 10.1 tokens \\
+\midrule
+Period count               & 13,564 (9.6\%) \\
+Comma count                & 15,257 (10.8\%) \\
+Question mark count        & 840 (0.6\%) \\
+No punctuation (O)         & 111,965 (79.1\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Text preprocessing involved sentence segmentation, tokenization, and label assignment. Each token was assigned a label based on the punctuation mark immediately following it. We removed duplicate sentences, corrected encoding errors specific to Cyrillic text, and discarded sentences containing fewer than 2~tokens. Input sequences longer than 256~tokens were truncated during tokenization.
+
+We split the dataset into training (76.5\%), validation (8.5\%), and test (15\%) sets using random sampling with a fixed seed (\texttt{random\_state=42}) for reproducibility.
+
+\subsection{Models}
+
+We compare two multilingual pre-trained transformer models, both fine-tuned on our Kyrgyz dataset with a linear classification head appended on top of the final hidden states for token-level prediction.
+
+\textbf{mBERT} (bert-base-multilingual-cased~\cite{devlin2019bert}) is pre-trained on Wikipedia text in 104~languages using masked language modeling and next-sentence prediction. It uses WordPiece tokenization and contains approximately 177M parameters (12~layers, 12~attention heads, 768-dimensional hidden states).
+
+\textbf{XLM-RoBERTa-base}~\cite{conneau2020unsupervised} is pre-trained on 2.5~TB of filtered CommonCrawl data in 100~languages including Kyrgyz. It uses SentencePiece BPE tokenization and contains approximately 270M parameters (12~layers, 12~attention heads, 768-dimensional hidden states). Unlike mBERT, XLM-RoBERTa was trained with larger batches and more data, and does not use next-sentence prediction.
+
+For comparison, we also evaluate a \textbf{rule-based baseline}: a deterministic system that inserts a period at sentence boundaries and a comma every $M$~tokens, where $M$ is set to the mean clause length in the training data ($M=5$, based on the average of 1.1 commas per sentence with mean sentence length of 10.1 tokens). The baseline does not predict question marks, assigning all sentence-final positions the \texttt{PERIOD} label. All training and evaluation was performed using the HuggingFace Transformers library~\cite{wolf2019huggingface}.
+
+\subsection{Training Configuration}
+
+\begin{table}[t]
+\caption{Training hyperparameters (identical for both models).}
+\label{tab:hyperparams}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Max sequence length     & 256 \\
+Batch size              & 16 \\
+Learning rate           & 5e-5 \\
+Optimizer               & AdamW \\
+Weight decay            & 0.01 \\
+Warmup ratio            & 0.1 \\
+Epochs                  & 5 \\
+Loss function           & Cross-entropy \\
+Precision               & FP16 \\
+Hardware                & Google Colab T4 GPU \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Both models were trained with identical hyperparameters to ensure a fair comparison. We trained for 5~epochs and selected the best checkpoint based on validation weighted F1-score (\texttt{load\_best\_model\_at\_end}).
+
+\subsection{Label Assignment}
+
+Since both tokenizers split Kyrgyz words into multiple subword tokens, each word's punctuation label must be assigned to exactly one subtoken. We assign the label to the \textbf{last subtoken} of each word; all other subtokens receive a special ignore index ($-100$) and are excluded from the loss computation. This strategy ensures that the model must accumulate contextual information across the full subword sequence before making a prediction, which is particularly relevant for agglutinative Kyrgyz words where punctuation-relevant morphological suffixes appear at the word end.
+
+\subsection{Evaluation Metrics}
+
+We evaluate using precision (P), recall (R), and F1-score at the token level, computed both per-class and as a weighted average. We also report the full confusion matrix to analyze error patterns across punctuation classes.
+
+%% ============================================================
+%% 5. EXPERIMENTS AND RESULTS
+%% ============================================================
+\section{Experiments and Results}
+\label{sec:results}
+
+\subsection{Main Results}
+
+Table~\ref{tab:main-results} presents the overall performance of each model on the held-out test set (15\% of the dataset, 20,622 tokens).
+
+\begin{table}[t]
+\caption{Overall punctuation restoration results (weighted average).}
+\label{tab:main-results}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\midrule
+Rule-based baseline                & 0.801 & 0.781 & 0.790 \\
+mBERT                              & 0.937 & 0.939 & 0.938 \\
+\textbf{XLM-RoBERTa-base}          & \textbf{0.949} & \textbf{0.950} & \textbf{0.949} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Per-Class Comparison}
+
+Table~\ref{tab:detail-both} presents the full per-class precision, recall, and F1-score for both fine-tuned models on the test set. XLM-RoBERTa outperforms mBERT on three of four classes, with the largest gains on \texttt{QUESTION} (+6.1\% F1) and \texttt{COMMA} (+5.8\% F1).
+
+\begin{table*}[t]
+\caption{Detailed per-class results for mBERT and XLM-RoBERTa on the Kyrgyz test set. Best F1 per class is in bold.}
+\label{tab:detail-both}
+\begin{tabular}{l ccc ccc c}
+\toprule
+ & \multicolumn{3}{c}{\textbf{mBERT}} & \multicolumn{3}{c}{\textbf{XLM-RoBERTa}} & \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+\textbf{Class} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{Support} \\
+\midrule
+O (no punctuation)  & 0.959 & 0.967 & 0.963 & 0.969 & 0.971 & \textbf{0.970} & 16,344 \\
+COMMA                & 0.742 & 0.692 & 0.717 & 0.784 & 0.766 & \textbf{0.775} & 2,169 \\
+PERIOD               & 0.987 & 0.993 & \textbf{0.990} & 0.989 & 0.988 & 0.989 & 1,984 \\
+QUESTION             & 0.638 & 0.648 & 0.643 & 0.662 & 0.752 & \textbf{0.704} & 125 \\
+\midrule
+Weighted avg.        & 0.937 & 0.939 & 0.938 & 0.949 & 0.950 & \textbf{0.949} & 20,622 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Several patterns emerge from the per-class comparison:
+
+\begin{itemize}
+    \item \texttt{PERIOD} achieves near-perfect performance for both models, with mBERT slightly outperforming XLM-RoBERTa (F1: 99.0\% vs.\ 98.9\%). Sentence boundaries in Kyrgyz are signaled by strong lexical cues (sentence-final verb forms), which even the smaller mBERT model captures effectively.
+    \item \texttt{COMMA} is the most challenging class for both models (mBERT F1: 71.7\%, XLM-RoBERTa F1: 77.5\%). XLM-RoBERTa achieves higher precision (78.4\% vs.\ 74.2\%) and recall (76.6\% vs.\ 69.2\%), indicating improvement on both false positives and missed commas. The difficulty reflects the inherent ambiguity of comma placement at Kyrgyz converb clause boundaries.
+    \item \texttt{QUESTION} has the lowest support (125 tokens) and the widest performance gap between models (+6.1\% F1 in favor of XLM-RoBERTa). XLM-RoBERTa achieves substantially higher recall (75.2\% vs.\ 64.8\%), indicating it detects more questions. This suggests that its larger pre-training corpus provides better representations for the rare morphological patterns (question particles \textit{-by/-py}) that signal questions in Kyrgyz.
+\end{itemize}
+
+Figure~\ref{fig:confusion} presents the normalized confusion matrices for both models, illustrating the error distribution across punctuation classes.
+
+\begin{figure}[t]
+\centering
+\begin{minipage}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{confusion_matrix_mbert.png}
+  \centerline{(a) mBERT}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{confusion_matrix-Roberta.jpeg}
+  \centerline{(b) XLM-RoBERTa}
+\end{minipage}
+\caption{Normalized confusion matrices for (a)~mBERT and (b)~XLM-RoBERTa on the Kyrgyz test set. Values represent the proportion of each true class predicted as each label. Both models show strong diagonal dominance; XLM-RoBERTa exhibits fewer off-diagonal errors, particularly for \texttt{COMMA} and \texttt{QUESTION}.}
+\label{fig:confusion}
+\end{figure}
+
+\subsection{Cross-Lingual Comparison}
+
+Table~\ref{tab:crosslingual} places our results in the context of punctuation restoration research on other languages.
+
+\begin{table}[t]
+\caption{Comparison with punctuation restoration results for other languages. Direct comparison is limited due to differences in datasets and evaluation protocols. $^{\dagger}$Macro F1. $^{\ddagger}$Overall F-score.}
+\label{tab:crosslingual}
+\begin{tabular}{llcll}
+\toprule
+\textbf{Language} & \textbf{Model} & \textbf{F1} & \textbf{Resources} & \textbf{Source} \\
+\midrule
+English (clean)   & XLM-R     & 0.870 & High   & \cite{alam2020punctuation} \\
+Bangla            & XLM-R     & 0.695 & Low    & \cite{alam2020punctuation} \\
+Hungarian         & BERT      & 0.820 & Medium & \cite{nagy2021punctuation} \\
+Turkish           & Transformers & 0.839$^{\dagger}$   & Medium & \cite{kurt2023turkish} \\
+Turkish           & Transformer enc. & 0.901$^{\ddagger}$   & Medium & \cite{gormez2025turkish} \\
+\textbf{Kyrgyz}   & \textbf{XLM-R} & \textbf{0.949} & \textbf{Low} & \textbf{This work} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Our best Kyrgyz model achieves a higher F1 (94.9\%) than reported for both Bangla (69.5\%) and English clean text (87.0\%). However, direct comparison is limited: our dataset consists of formal written text, whereas Alam et al.~\cite{alam2020punctuation} also evaluated on noisy ASR-like transcripts. The strong performance likely reflects the formal, well-structured nature of our sources (literary texts, Wikipedia), as well as the effectiveness of fine-tuning on language-specific data.
+
+%% ============================================================
+%% 6. ERROR ANALYSIS AND DISCUSSION
+%% ============================================================
+\section{Error Analysis and Discussion}
+\label{sec:discussion}
+
+\subsection{Comma Prediction Challenges}
+
+Comma prediction remains the most challenging class for both models, with XLM-RoBERTa achieving F1 of 77.5\% and mBERT 71.7\%. The difficulty is linked to Kyrgyz converb constructions. Converbal clauses (marked by suffixes such as \textit{-p, -yp, -ip}) function as subordinate clauses and are typically separated by commas. However, the models frequently fail to recognize these morphological cues as comma indicators, particularly in shorter clauses where the converb suffix is the only signal. For example, in \textit{``mushtumdaryn t\"{u}y\"{u}p, kayra achty''} (`clenching his fists, he opened [them] again'), the converb suffix \textit{-p} signals a comma, but the model may not identify it as a clause boundary in the absence of other syntactic cues. XLM-RoBERTa's advantage over mBERT on commas (+5.8\% F1) suggests that its larger pre-training corpus better captures the distributional patterns around Kyrgyz clause boundaries.
+
+\subsection{Question Mark Detection}
+
+Question marks achieve the lowest F1-score among punctuation classes for both models (XLM-RoBERTa: 70.4\%, mBERT: 64.3\%), reflecting the severe class imbalance---question marks constitute only 0.6\% of all tokens (125 instances in the test set). Kyrgyz forms questions through suffixal particles (\textit{-by/-py}) and intonation rather than word-order inversion, making question detection dependent on recognizing specific morphological markers. XLM-RoBERTa's advantage over mBERT (+6.1\% F1) on this class suggests that the larger and more diverse pre-training data of XLM-RoBERTa provides better representations for rare morphological patterns. Techniques such as focal loss~\cite{lin2017focal} or class-weighted training may further improve question detection in future work.
+
+\subsection{Subword Tokenization Effects}
+
+Both models fragment agglutinative Kyrgyz words into multiple subword tokens, but with different tokenization algorithms. mBERT uses WordPiece tokenization trained primarily on Wikipedia, while XLM-RoBERTa uses SentencePiece BPE trained on a larger and more diverse CommonCrawl corpus. Since XLM-RoBERTa's pre-training data includes Kyrgyz text, its vocabulary is expected to contain more Kyrgyz-specific subword units, resulting in shorter token sequences and potentially better morphological coverage. In both cases, punctuation labels are assigned to the last subword of each word, requiring the model to propagate information across subword boundaries. This is particularly challenging for long Kyrgyz words with multiple suffixes, where the punctuation-relevant morphological information (e.g., a converb marker) may be several subword tokens away from the token that carries the punctuation label. XLM-RoBERTa's consistent advantage across classes suggests that its tokenizer better preserves the morphological structure of Kyrgyz words.
+
+\subsection{Limitations}
+
+This study has several limitations. First, our dataset consists primarily of formal written text; performance on conversational or ASR-generated text may differ substantially. Second, we evaluate only three punctuation marks; extending to semicolons, colons, and exclamation marks would require additional annotated data. Third, although a monolingual Kyrgyz model (KyrgyzBERT~\cite{metinov2025kyrgyzbert}) has recently been introduced, it was not yet available at the time of our experiments; evaluating it for punctuation restoration is a promising direction for future work.
+
+%% ============================================================
+%% 7. CONCLUSION
+%% ============================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented the first punctuation restoration system for Kyrgyz, comparing two multilingual transformer models fine-tuned on a newly constructed dataset of 14,028 sentences. XLM-RoBERTa-base achieves the best performance with an F1-score of 94.9\%, outperforming mBERT (93.8\%) and a rule-based baseline (79.0\%), demonstrating the effectiveness of multilingual transfer learning for agglutinative low-resource languages.
+
+Per-class analysis reveals that period restoration is near-perfect (F1: 98.9\%), while comma prediction remains the most challenging class (F1: 77.5\%) due to the interaction between Kyrgyz converb constructions and punctuation conventions. XLM-RoBERTa consistently outperforms mBERT, with the largest gains on question mark (+6.1\%) and comma (+5.8\%) prediction, suggesting that its larger pre-training corpus provides better representations for morphologically complex patterns.
+
+Future work will focus on: (1)~evaluating on real ASR output to assess domain transfer, (2)~cross-Turkic transfer learning using Turkish, Kazakh, and Uzbek data, (3)~incorporating morphological features to improve comma prediction at converb boundaries, (4)~expanding the dataset with conversational and social media text, and (5)~integrating prosodic features for joint ASR--punctuation models.
+
+%% ============================================================
+%% ACKNOWLEDGEMENTS
+%% ============================================================
+\begin{acks}
+Generative AI tools were used to assist with manuscript editing and language improvement. All experimental design, implementation, and analysis were conducted by the authors.
+\end{acks}
+
+%% ============================================================
+%% REFERENCES
+%% ============================================================
+\bibliography{references}
+
+\end{document}

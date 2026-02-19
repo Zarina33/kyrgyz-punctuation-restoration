@@ -1,0 +1,35 @@
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Model files (hosted on HuggingFace)
+*.zip
+*.bin
+*.pt
+*.safetensors
+xlmr_punct_kyrgyz_final/
+mbert_kyrgyz_punct_model/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+main.pdf
+
+# Word export
+main.docx
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
+
+# Misc
+evaluate_model.py
+evaluate_test_split.py

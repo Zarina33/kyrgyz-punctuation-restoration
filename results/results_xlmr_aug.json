@@ -1,0 +1,69 @@
+{
+  "tag": "xlmr_aug",
+  "model": "xlm-roberta-base",
+  "data": "train_data_augmented.json",
+  "params_millions": 277.46,
+  "weighted": {
+    "precision": 0.9432,
+    "recall": 0.9443,
+    "f1": 0.9437
+  },
+  "per_class": {
+    "O": {
+      "precision": 0.9648,
+      "recall": 0.9713,
+      "f1": 0.9681,
+      "support": 19085
+    },
+    "COMMA": {
+      "precision": 0.7884,
+      "recall": 0.7475,
+      "f1": 0.7674,
+      "support": 2657
+    },
+    "PERIOD": {
+      "precision": 0.9654,
+      "recall": 0.9792,
+      "f1": 0.9722,
+      "support": 1967
+    },
+    "QUESTION": {
+      "precision": 0.847,
+      "recall": 0.8128,
+      "f1": 0.8295,
+      "support": 470
+    }
+  },
+  "confusion_matrix_raw": [
+    [
+      18538,
+      523,
+      2,
+      22
+    ],
+    [
+      643,
+      1986,
+      17,
+      11
+    ],
+    [
+      0,
+      5,
+      1926,
+      36
+    ],
+    [
+      33,
+      5,
+      50,
+      382
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "O",
+    "COMMA",
+    "PERIOD",
+    "QUESTION"
+  ]
+}

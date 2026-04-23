@@ -1,0 +1,69 @@
+{
+  "tag": "kbert_aug",
+  "model": "metinovadilet/KyrgyzBert",
+  "data": "train_data_augmented.json",
+  "params_millions": 35.56,
+  "weighted": {
+    "precision": 0.9201,
+    "recall": 0.9234,
+    "f1": 0.9214
+  },
+  "per_class": {
+    "O": {
+      "precision": 0.9495,
+      "recall": 0.965,
+      "f1": 0.9572,
+      "support": 19085
+    },
+    "COMMA": {
+      "precision": 0.7068,
+      "recall": 0.6187,
+      "f1": 0.6598,
+      "support": 2657
+    },
+    "PERIOD": {
+      "precision": 0.9658,
+      "recall": 0.9761,
+      "f1": 0.9709,
+      "support": 1967
+    },
+    "QUESTION": {
+      "precision": 0.7393,
+      "recall": 0.7362,
+      "f1": 0.7377,
+      "support": 470
+    }
+  },
+  "confusion_matrix_raw": [
+    [
+      18417,
+      641,
+      6,
+      21
+    ],
+    [
+      938,
+      1644,
+      16,
+      59
+    ],
+    [
+      4,
+      1,
+      1920,
+      42
+    ],
+    [
+      38,
+      40,
+      46,
+      346
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "O",
+    "COMMA",
+    "PERIOD",
+    "QUESTION"
+  ]
+}

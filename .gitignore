@@ -11,6 +11,7 @@
 *.safetensors
 xlmr_punct_kyrgyz_final/
 mbert_kyrgyz_punct_model/
+ckpt_*/
 
 # LaTeX build artifacts
 *.aux

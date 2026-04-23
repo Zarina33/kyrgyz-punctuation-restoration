@@ -1,0 +1,38 @@
+[
+  {
+    "model": "mBERT",
+    "params_M": 177.27,
+    "disk_MB": 2028.9,
+    "gpu_latency_ms_median": 3.69,
+    "gpu_latency_ms_mean": 3.7,
+    "gpu_latency_ms_std": 0.04,
+    "gpu_throughput_samples_per_sec": 1031.9,
+    "cpu_latency_ms_median": 35.2,
+    "cpu_latency_ms_mean": 35.3,
+    "cpu_latency_ms_std": 0.3
+  },
+  {
+    "model": "XLM-R",
+    "params_M": 277.46,
+    "disk_MB": 3175.4,
+    "gpu_latency_ms_median": 3.71,
+    "gpu_latency_ms_mean": 3.72,
+    "gpu_latency_ms_std": 0.04,
+    "gpu_throughput_samples_per_sec": 1043.2,
+    "cpu_latency_ms_median": 35.0,
+    "cpu_latency_ms_mean": 35.0,
+    "cpu_latency_ms_std": 0.2
+  },
+  {
+    "model": "KyrgyzBERT",
+    "params_M": 35.56,
+    "disk_MB": 407.1,
+    "gpu_latency_ms_median": 1.29,
+    "gpu_latency_ms_mean": 1.3,
+    "gpu_latency_ms_std": 0.04,
+    "gpu_throughput_samples_per_sec": 4495.4,
+    "cpu_latency_ms_median": 9.5,
+    "cpu_latency_ms_mean": 9.5,
+    "cpu_latency_ms_std": 0.1
+  }
+]

@@ -1,0 +1,69 @@
+{
+  "tag": "mbert_aug",
+  "model": "bert-base-multilingual-cased",
+  "data": "train_data_augmented.json",
+  "params_millions": 177.27,
+  "weighted": {
+    "precision": 0.9285,
+    "recall": 0.9316,
+    "f1": 0.9296
+  },
+  "per_class": {
+    "O": {
+      "precision": 0.9521,
+      "recall": 0.9692,
+      "f1": 0.9606,
+      "support": 19069
+    },
+    "COMMA": {
+      "precision": 0.7553,
+      "recall": 0.6495,
+      "f1": 0.6984,
+      "support": 2656
+    },
+    "PERIOD": {
+      "precision": 0.9601,
+      "recall": 0.9797,
+      "f1": 0.9698,
+      "support": 1966
+    },
+    "QUESTION": {
+      "precision": 0.8174,
+      "recall": 0.8,
+      "f1": 0.8086,
+      "support": 470
+    }
+  },
+  "confusion_matrix_raw": [
+    [
+      18482,
+      554,
+      3,
+      30
+    ],
+    [
+      896,
+      1725,
+      18,
+      17
+    ],
+    [
+      0,
+      3,
+      1926,
+      37
+    ],
+    [
+      33,
+      2,
+      59,
+      376
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "O",
+    "COMMA",
+    "PERIOD",
+    "QUESTION"
+  ]
+}
